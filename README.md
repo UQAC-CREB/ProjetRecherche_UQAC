@@ -1,5 +1,7 @@
 # Hub des projets de recherche — UQAC
 
+🔗 **Application en ligne** : https://uqac-creb.github.io/ProjetRecherche_UQAC/
+
 Application web statique (HTML + MapLibre GL JS, sans backend) permettant de
 présenter les projets de recherche d'importance à l'UQAC sur une carte du
 Québec. Pensée pour être **légère, déployée directement depuis GitHub
@@ -24,16 +26,19 @@ fonctionnement aux chercheur(-euse)s qui seront sollicité(e)s.
 ## Ajouter un nouveau projet de recherche
 
 1. Créer un dossier `data/<NomChercheur>/` contenant :
-   - `Description_projet.txt` — mêmes 2 premières lignes que les exemples :
+   - `Description_projet.txt` :
      ```
      Coordonnées centrales projet:
      XX,XXXXXXX°W YY,YYYYYYY°N
 
+     Résumé:
+     <texte court affiché dans le panneau — utilisé par l'app>
+
      Description:
-     <texte libre>
+     <texte complet, conservé comme référence>
      ```
    - les shapefiles (`.shp` + fichiers associés) du projet
-2. (Optionnel) Déposer des photos dans `photos/<NomChercheur>/` (jpg/jpeg/png/webp)
+2. (Optionnel) Déposer 2-3 photos du site dans `photos/<NomChercheur>/` (jpg/jpeg/png/webp)
 3. Ajouter une entrée dans le dictionnaire `PROJECTS` de
    [transformation_donnees.py](transformation_donnees.py) (titre, libellés des
    couches, type `fill` ou `circle`)
@@ -59,10 +64,10 @@ problèmes CORS/fetch que donnerait un simple double-clic sur `index.html`.
 
 ## Déploiement (GitHub Pages)
 
-1. Pousser ce dépôt sur `github.com/uqac-creb/<nom-du-repo>`
-2. Dans **Settings → Pages**, choisir la branche `main` et le dossier `/ (root)`
-3. L'app sera servie à `https://uqac-creb.github.io/<nom-du-repo>/`
-4. Dans ArcGIS StoryMap, intégrer cette URL via un bloc **Embed** (iframe)
+Déjà configuré pour ce dépôt : **Settings → Pages**, branche `main`, dossier
+`/ (root)`. Tout push sur `main` met à jour l'app en ligne en ~1 minute.
+
+Dans ArcGIS StoryMap, intégrer l'URL ci-dessus via un bloc **Embed** (iframe).
 
 ## Structure
 
