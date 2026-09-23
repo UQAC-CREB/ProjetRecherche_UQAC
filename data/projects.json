@@ -1,0 +1,49 @@
+[
+  {
+    "id": "AbirArbi",
+    "titre": "Régénération après coupe de récupération post-feu",
+    "chercheur": "Abir Arbi",
+    "lon": -70.9992392,
+    "lat": 49.5960491,
+    "description": "Avec des feux de forêt plus fréquents et sévères, les chantiers de reboisement se multiplient et leurs coûts dépassent parfois les budgets sylvicoles. Ce projet évalue si la coupe de récupération post-feu — en dispersant des graines et en créant des microsites propices grâce au passage de la machinerie — peut favoriser une régénération naturelle comparable à celle des forêts brûlées non récoltées. La densité de régénération des semis d'épinette noire et de pin gris est comparée selon le type de secteur (récupéré vs naturel), la composition et la sévérité du feu (CBI). À terme, l'étude pourrait aider à réduire les coûts de replantation des forêts touchées par le feu.",
+    "layers": [
+      {
+        "label": "Zone brûlée (feu 395)",
+        "type": "fill",
+        "file": "data/geo/AbirArbi/FEU_395.geojson"
+      },
+      {
+        "label": "Placettes d'échantillonnage",
+        "type": "circle",
+        "file": "data/geo/AbirArbi/XY_site.geojson"
+      }
+    ],
+    "avatar": "assets/avatar-placeholder.svg",
+    "photos": [
+      "photos/AbirArbi/site_1.jpg",
+      "photos/AbirArbi/site_2.jpg",
+      "photos/AbirArbi/site_3.jpg"
+    ]
+  },
+  {
+    "id": "GabrielDavidson",
+    "titre": "Ensemencement aérien post-feu en forêt boréale",
+    "chercheur": "Gabriel Davidson",
+    "lon": -75.3939908,
+    "lat": 51.237891,
+    "description": "En 2023, plus de 4,5M d'ha de forêt ont brûlé au Québec, dont 400k ha de jeunes peuplements d'épinette noire issus de coupes ou de feux anciens. Une grande partie de ces peuplements ne pourront pas se régénérer naturellement faute de graines viables, créant des landes forestières — un « échec de régénération ». La plantation manuelle pour y remédier est coûteuse et exigeante en main-d'œuvre; l'ensemencement aérien par drone est une alternative prometteuse, plus rapide et économique. Ce projet évalue l'efficacité de cette technique en mesurant, sur différentes stations, l'abondance, la densité, la composition et l'origine des semis ainsi que les conditions du substrat, afin de guider la restauration des forêts touchées par le feu.",
+    "layers": [
+      {
+        "label": "Réserve Assinica (secteur d'étude)",
+        "type": "fill",
+        "file": "data/geo/GabrielDavidson/Reserve_assinica.geojson"
+      }
+    ],
+    "avatar": "assets/avatar-placeholder.svg",
+    "photos": [
+      "photos/GabrielDavidson/site_1.jpg",
+      "photos/GabrielDavidson/site_2.jpg",
+      "photos/GabrielDavidson/site_3.jpg"
+    ]
+  }
+]

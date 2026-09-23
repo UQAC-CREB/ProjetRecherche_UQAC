@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hub des projets de recherche — UQAC</title>
+
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent:       #1a6b8f;
+      --accent-dark:  #124a63;
+      --point:        #e08e2c;
+      --header-bg:    #2C3E50;
+      --panel-bg:     #f9f9f9;
+      --panel-border: #dde2e8;
+      --box-bg:       #ffffff;
+      --box-shadow:   0 2px 8px rgba(0,0,0,0.08);
+      --text-main:    #2a2a2a;
+      --text-muted:   #6b7280;
+      --text-label:   #374151;
+    }
+
+    /* ── Clé : html/body/app occupent 100% de l'iframe, pas 100vh ── */
+    html { height: 100%; overflow: hidden; }
+    body {
+      height: 100%; overflow: hidden;
+      font-family: 'Source Sans 3', sans-serif;
+      background: var(--panel-bg); color: var(--text-main);
+      display: flex; flex-direction: column;
+    }
+
+    #header {
+      flex-shrink: 0;
+      height: 48px; background: var(--header-bg);
+      display: flex; align-items: center;
+      padding: 0 16px; gap: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      z-index: 10;
+    }
+    #header .icon { font-size: 20px; flex-shrink: 0; }
+    #header h1 {
+      font-family: 'Oswald', sans-serif; font-size: 12px; font-weight: 600;
+      letter-spacing: 1.2px; text-transform: uppercase; color: #fff; line-height: 1.25;
+    }
+
+    /* ── App occupe tout l'espace restant ── */
+    #app {
+      flex: 1; min-height: 0;
+      display: flex; overflow: hidden;
+    }
+
+    /* ── Panel gauche ── */
+    #panel {
+      width: 360px; min-width: 280px; flex-shrink: 0;
+      background: var(--panel-bg);
+      border-right: 1px solid var(--panel-border);
+      display: flex; flex-direction: column;
+      overflow-y: auto;
+      padding: 14px 14px 20px;
+      gap: 10px;
+    }
+    #panel::-webkit-scrollbar { width: 8px; }
+    #panel::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+    .panel-label {
+      font-family: 'Oswald', sans-serif; font-size: 10px;
+      letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-muted);
+      flex-shrink: 0; margin-bottom: 2px;
+    }
+
+    /* ── Liste des projets ── */
+    #project-list { display: flex; flex-direction: column; gap: 8px; }
+    .project-card {
+      background: var(--box-bg);
+      border: 1px solid var(--panel-border);
+      border-left: 4px solid var(--accent);
+      border-radius: 6px; padding: 10px 12px;
+      box-shadow: var(--box-shadow);
+      cursor: pointer; transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .project-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .project-card .titre {
+      font-family: 'Oswald', sans-serif; font-size: 13px; font-weight: 600;
+      color: var(--text-main); line-height: 1.3; margin-bottom: 3px;
+    }
+    .project-card .chercheur {
+      font-size: 11px; color: var(--accent); font-weight: 600;
+    }
+
+    /* ── Vue détail ── */
+    #detail { display: none; flex-direction: column; gap: 12px; }
+    #btn-back {
+      align-self: flex-start;
+      background: none; border: none; cursor: pointer;
+      font-family: 'Source Sans 3', sans-serif; font-size: 12px; font-weight: 600;
+      color: var(--accent); padding: 4px 0;
+    }
+    #btn-back:hover { text-decoration: underline; }
+
+    #detail-avatar-wrap { display: flex; justify-content: center; }
+    #detail-avatar {
+      width: 84px; height: 84px; border-radius: 50%;
+      object-fit: cover; border: 3px solid var(--box-bg);
+      box-shadow: var(--box-shadow);
+    }
+
+    #detail-titre {
+      font-family: 'Oswald', sans-serif; font-size: 16px; font-weight: 700;
+      color: var(--text-main); line-height: 1.3; text-align: center;
+    }
+    #detail-chercheur {
+      font-size: 12px; font-weight: 600; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 0.5px; text-align: center;
+    }
+
+    .section-block { display: flex; flex-direction: column; gap: 5px; }
+
+    #detail-description {
+      font-size: 13px; line-height: 1.55; color: var(--text-main);
+      text-align: justify; white-space: pre-line;
+    }
+
+    .chart-box {
+      background: var(--box-bg); border: 1px solid var(--panel-border);
+      border-radius: 6px; padding: 8px; box-shadow: var(--box-shadow);
+      height: 160px; position: relative;
+    }
+    .chart-box canvas { position: absolute; inset: 8px; width: calc(100% - 16px) !important; height: calc(100% - 16px) !important; }
+
+    .layers-box {
+      background: var(--box-bg); border: 1px solid var(--panel-border);
+      border-radius: 6px; padding: 8px 10px; font-size: 11px; color: var(--text-muted);
+    }
+    .layers-box ul { list-style: none; margin-top: 4px; }
+    .layers-box li { padding: 2px 0; display: flex; align-items: center; gap: 6px; }
+    .swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    .swatch.fill { background: var(--accent); }
+    .swatch.circle { background: var(--point); border-radius: 50%; }
+
+    #photos-section { display: none; flex-direction: column; gap: 6px; }
+    #photos-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;
+    }
+    #photos-grid img {
+      width: 100%; height: 80px; object-fit: cover; border-radius: 5px;
+      border: 1px solid var(--panel-border); cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    #photos-grid img:hover { opacity: 0.85; }
+
+    /* ── Lightbox ── */
+    #lightbox {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+      display: none; align-items: center; justify-content: center;
+      z-index: 200; cursor: zoom-out; padding: 30px;
+    }
+    #lightbox.open { display: flex; }
+    #lightbox img { max-width: 100%; max-height: 100%; border-radius: 6px; }
+
+    /* ── Map ── */
+    #map { flex: 1; position: relative; overflow: hidden; }
+    #map-container { width: 100%; height: 100%; }
+
+    .maplibregl-popup-content {
+      font-family: 'Source Sans 3', sans-serif; font-size: 12px;
+      padding: 8px 10px; border-radius: 6px;
+    }
+    .popup-titre { font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 11px; margin-bottom: 2px; }
+    .popup-chercheur { color: var(--accent); font-size: 10px; font-weight: 600; }
+
+    #loading {
+      position: absolute; inset: 0; background: #f9f9f9;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 14px; z-index: 100; transition: opacity 0.5s;
+    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+    #loading-msg { font-family: 'Oswald', sans-serif; letter-spacing: 2px; font-size: 12px; color: var(--text-muted); text-transform: uppercase; }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #e5e7eb;
+      border-top-color: var(--accent);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Resizer ── */
+    #resizer {
+      width: 6px; flex-shrink: 0;
+      background: var(--panel-border);
+      cursor: col-resize;
+      transition: background 0.15s;
+      position: relative; z-index: 5;
+    }
+    #resizer:hover, #resizer.dragging { background: #5b9bd5; }
+    #resizer::after {
+      content: '';
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 2px; height: 32px;
+      background: rgba(0,0,0,0.15);
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <span class="icon">🎓</span>
+  <h1>Hub des projets de recherche — UQAC</h1>
+</div>
+
+<div id="app">
+  <div id="panel">
+
+    <div id="list-view">
+      <span class="panel-label">Projets de recherche (<span id="project-count">0</span>)</span>
+      <div id="project-list"></div>
+    </div>
+
+    <div id="detail">
+      <button id="btn-back">← Retour à la liste</button>
+
+      <div id="detail-avatar-wrap">
+        <img id="detail-avatar" src="" alt="" />
+      </div>
+      <div id="detail-chercheur"></div>
+      <div id="detail-titre"></div>
+
+      <div class="section-block">
+        <span class="panel-label">Description du projet de recherche</span>
+        <div id="detail-description"></div>
+      </div>
+
+      <div class="layers-box">
+        <span class="panel-label" style="margin-bottom:0;">Données affichées sur la carte</span>
+        <ul id="detail-layers"></ul>
+      </div>
+
+      <div class="section-block">
+        <span class="panel-label">Résultats</span>
+        <div class="chart-box">
+          <canvas id="chart-resultats"></canvas>
+        </div>
+      </div>
+
+      <div id="photos-section" class="section-block">
+        <span class="panel-label">Photos du site</span>
+        <div id="photos-grid"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="resizer"></div>
+  <div id="map">
+    <div id="map-container"></div>
+    <div id="loading">
+      <div class="spinner"></div>
+      <p id="loading-msg">Chargement des projets…</p>
+    </div>
+  </div>
+</div>
+
+<div id="lightbox"><img id="lightbox-img" src="" alt="" /></div>
+
+<script>
+const STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
+const BOUNDS = [[-79.5, 44.5], [-56.5, 63]];
+
+let map;
+let PROJECTS = [];
+let selectedId = null;
+const loadedProjects = new Set();
+const geomCache = {}; // project.id -> [ [minX,minY,maxX,maxY], ... ]
+let hoverPopup;
+
+function setLoadingMsg(msg) { document.getElementById('loading-msg').textContent = msg; }
+
+// ── Rendu du panneau ──────────────────────────────────────────────────
+function renderList() {
+  document.getElementById('list-view').style.display = 'flex';
+  document.getElementById('list-view').style.flexDirection = 'column';
+  document.getElementById('list-view').style.gap = '10px';
+  document.getElementById('detail').style.display = 'none';
+
+  document.getElementById('project-count').textContent = PROJECTS.length;
+  const list = document.getElementById('project-list');
+  list.innerHTML = '';
+  PROJECTS.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'project-card';
+    card.innerHTML = `
+      <div class="titre">${p.titre}</div>
+      <div class="chercheur">${p.chercheur}</div>
+    `;
+    card.addEventListener('click', () => selectProject(p.id));
+    list.appendChild(card);
+  });
+}
+
+function renderDetail(project) {
+  document.getElementById('list-view').style.display = 'none';
+  document.getElementById('detail').style.display = 'flex';
+
+  const avatar = document.getElementById('detail-avatar');
+  avatar.src = project.avatar || 'assets/avatar-placeholder.svg';
+  avatar.alt = project.chercheur;
+
+  document.getElementById('detail-chercheur').textContent = project.chercheur;
+  document.getElementById('detail-titre').textContent = project.titre;
+  document.getElementById('detail-description').textContent = project.description;
+
+  drawResultsChart(project);
+
+  const layersUl = document.getElementById('detail-layers');
+  layersUl.innerHTML = '';
+  project.layers.forEach(l => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="swatch ${l.type}"></span>${l.label}`;
+    layersUl.appendChild(li);
+  });
+
+  const photosSection = document.getElementById('photos-section');
+  const grid = document.getElementById('photos-grid');
+  grid.innerHTML = '';
+  if (project.photos && project.photos.length) {
+    photosSection.style.display = 'flex';
+    project.photos.forEach(src => {
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = project.titre;
+      img.addEventListener('click', () => openLightbox(src));
+      grid.appendChild(img);
+    });
+  } else {
+    photosSection.style.display = 'none';
+  }
+}
+
+// ── Graphique "Résultats" (générique, démonstration) ────────────────
+let resultsChart = null;
+
+function seededValues(seed, n, min, max) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    h = (h * 1103515245 + 12345) >>> 0;
+    out.push(min + (h % 1000) / 1000 * (max - min));
+  }
+  return out;
+}
+
+function drawResultsChart(project) {
+  const labels = ['Site A', 'Site B', 'Site C', 'Site D'];
+  const data = seededValues(project.id, labels.length, 15, 95);
+  const ctx = document.getElementById('chart-resultats').getContext('2d');
+
+  if (resultsChart) resultsChart.destroy();
+  resultsChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ data, backgroundColor: '#1a6b8f', borderRadius: 3 }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6b7280', font: { family: 'Source Sans 3', size: 9 } }, grid: { display: false } },
+        y: { ticks: { color: '#6b7280', font: { family: 'Source Sans 3', size: 9 } }, grid: { color: 'rgba(0,0,0,0.06)' } }
+      }
+    }
+  });
+}
+
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+document.getElementById('lightbox').addEventListener('click', () => {
+  document.getElementById('lightbox').classList.remove('open');
+});
+
+document.getElementById('btn-back').addEventListener('click', resetView);
+
+// ── Carte : points centraux ─────────────────────────────────────────
+function addCentersLayer() {
+  const fc = {
+    type: 'FeatureCollection',
+    features: PROJECTS.map(p => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
+      properties: { id: p.id, titre: p.titre, chercheur: p.chercheur }
+    }))
+  };
+  map.addSource('centers', { type: 'geojson', data: fc });
+  map.addLayer({
+    id: 'centers-layer', type: 'circle', source: 'centers',
+    paint: {
+      'circle-radius': ['case', ['==', ['get', 'id'], selectedId || ''], 9, 6],
+      'circle-color': ['case', ['==', ['get', 'id'], selectedId || ''], '#c0392b', '#ffffff'],
+      'circle-stroke-width': 2,
+      'circle-stroke-color': '#1a6b8f',
+    }
+  });
+
+  map.on('mouseenter', 'centers-layer', e => {
+    map.getCanvas().style.cursor = 'pointer';
+    const f = e.features[0];
+    hoverPopup = new maplibregl.Popup({ closeButton: false, offset: 10 })
+      .setLngLat(f.geometry.coordinates)
+      .setHTML(`<div class="popup-titre">${f.properties.titre}</div><div class="popup-chercheur">${f.properties.chercheur}</div>`)
+      .addTo(map);
+  });
+  map.on('mouseleave', 'centers-layer', () => {
+    map.getCanvas().style.cursor = '';
+    if (hoverPopup) { hoverPopup.remove(); hoverPopup = null; }
+  });
+  map.on('click', 'centers-layer', e => {
+    selectProject(e.features[0].properties.id);
+  });
+}
+
+function updateMarkerHighlight() {
+  if (!map.getLayer('centers-layer')) return;
+  map.setPaintProperty('centers-layer', 'circle-radius',
+    ['case', ['==', ['get', 'id'], selectedId || ''], 9, 6]);
+  map.setPaintProperty('centers-layer', 'circle-color',
+    ['case', ['==', ['get', 'id'], selectedId || ''], '#c0392b', '#ffffff']);
+}
+
+// ── Carte : couches géospatiales d'un projet ────────────────────────
+function bboxOfGeoJSON(gj) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  function walk(coords) {
+    if (typeof coords[0] === 'number') {
+      const [x, y] = coords;
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+    } else {
+      coords.forEach(walk);
+    }
+  }
+  gj.features.forEach(f => walk(f.geometry.coordinates));
+  return [minX, minY, maxX, maxY];
+}
+
+async function ensureProjectLayersLoaded(project) {
+  if (loadedProjects.has(project.id)) return;
+  const bboxes = [];
+  for (let i = 0; i < project.layers.length; i++) {
+    const layer = project.layers[i];
+    const gj = await fetch(layer.file).then(r => r.json());
+    bboxes.push(bboxOfGeoJSON(gj));
+
+    const srcId = `src-${project.id}-${i}`;
+    const layerId = `lyr-${project.id}-${i}`;
+    map.addSource(srcId, { type: 'geojson', data: gj });
+
+    if (layer.type === 'fill') {
+      map.addLayer({
+        id: layerId, type: 'fill', source: srcId,
+        paint: { 'fill-color': '#1a6b8f', 'fill-opacity': 0.30 }
+      });
+      map.addLayer({
+        id: layerId + '-line', type: 'line', source: srcId,
+        paint: { 'line-color': '#124a63', 'line-width': 1.5 }
+      });
+    } else if (layer.type === 'circle') {
+      map.addLayer({
+        id: layerId, type: 'circle', source: srcId,
+        paint: {
+          'circle-radius': 4, 'circle-color': '#e08e2c',
+          'circle-stroke-width': 1, 'circle-stroke-color': '#ffffff'
+        }
+      });
+    }
+  }
+  geomCache[project.id] = bboxes;
+  loadedProjects.add(project.id);
+}
+
+function setProjectLayersVisibility(project, visible) {
+  project.layers.forEach((layer, i) => {
+    const layerId = `lyr-${project.id}-${i}`;
+    const vis = visible ? 'visible' : 'none';
+    if (map.getLayer(layerId)) map.setLayoutProperty(layerId, 'visibility', vis);
+    if (map.getLayer(layerId + '-line')) map.setLayoutProperty(layerId + '-line', 'visibility', vis);
+  });
+}
+
+function fitToProject(project) {
+  const bboxes = geomCache[project.id] || [];
+  let minX = project.lon, minY = project.lat, maxX = project.lon, maxY = project.lat;
+  bboxes.forEach(([bx0, by0, bx1, by1]) => {
+    if (bx0 < minX) minX = bx0; if (bx1 > maxX) maxX = bx1;
+    if (by0 < minY) minY = by0; if (by1 > maxY) maxY = by1;
+  });
+  map.fitBounds([[minX, minY], [maxX, maxY]], { padding: 50, maxZoom: 13, duration: 900 });
+}
+
+async function selectProject(id) {
+  const project = PROJECTS.find(p => p.id === id);
+  if (!project) return;
+
+  if (selectedId && selectedId !== id) {
+    const prev = PROJECTS.find(p => p.id === selectedId);
+    if (prev) setProjectLayersVisibility(prev, false);
+  }
+  selectedId = id;
+
+  await ensureProjectLayersLoaded(project);
+  setProjectLayersVisibility(project, true);
+  fitToProject(project);
+  renderDetail(project);
+  updateMarkerHighlight();
+}
+
+function resetView() {
+  if (selectedId) {
+    const prev = PROJECTS.find(p => p.id === selectedId);
+    if (prev) setProjectLayersVisibility(prev, false);
+  }
+  selectedId = null;
+  updateMarkerHighlight();
+  renderList();
+  map.fitBounds(BOUNDS, { padding: 20, duration: 900 });
+}
+
+// ── Init ─────────────────────────────────────────────────────────────
+async function init() {
+  setLoadingMsg('Chargement des projets…');
+  PROJECTS = await fetch('data/projects.json').then(r => r.json());
+
+  map = new maplibregl.Map({
+    container: 'map-container',
+    style: STYLE_URL,
+    bounds: BOUNDS,
+    fitBoundsOptions: { padding: 20 },
+    attributionControl: false,
+  });
+  map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+  map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left');
+  map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+
+  map.on('load', () => {
+    addCentersLayer();
+    renderList();
+    document.getElementById('loading').classList.add('hidden');
+  });
+}
+
+init();
+
+// ── Resizable panel ──
+(function() {
+  const resizer = document.getElementById('resizer');
+  const panel   = document.getElementById('panel');
+  let dragging = false, startX = 0, startW = 0;
+
+  resizer.addEventListener('mousedown', (e) => {
+    dragging = true;
+    startX = e.clientX;
+    startW = panel.offsetWidth;
+    resizer.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const newW = Math.min(Math.max(startW + (e.clientX - startX), 260), window.innerWidth * 0.7);
+    panel.style.width = newW + 'px';
+    panel.style.minWidth = newW + 'px';
+    if (map) map.resize();
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    resizer.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    if (map) map.resize();
+  });
+})();
+</script>
+</body>
+</html>
